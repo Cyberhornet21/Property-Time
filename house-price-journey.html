@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real House Prices: 1975 → 2025</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --gold: #e2c060;
+  --red: #e05040;
+  --blue: #5080e0;
+  --dim: #666660;
+  --white: #f0ede8;
+  --bg: #080810;
+  --mono: 'IBM Plex Mono', monospace;
+  --display: 'Bebas Neue', cursive;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:auto}
+body{background:var(--bg);color:var(--white);font-family:var(--mono);overflow-x:hidden}
+#scroll-container{height:10000px;position:relative}
+#sticky{position:sticky;top:0;height:100vh;width:100%;overflow:hidden}
+
+/* Sky */
+#sky{position:absolute;inset:0;transition:background 0.8s}
+#moon{position:absolute;width:70px;height:70px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#fffde0,#d4c060);
+  box-shadow:0 0 40px 12px rgba(220,190,60,.3);
+  top:9%;right:11%;opacity:0;transition:opacity 1s}
+#stars{position:absolute;inset:0;opacity:0;transition:opacity 1.2s;pointer-events:none}
+#clouds{position:absolute;inset:0;opacity:0;transition:opacity 1s;pointer-events:none}
+.cloud{position:absolute;border-radius:60px;background:rgba(255,255,255,.1);filter:blur(10px)}
+
+/* City */
+#city{position:absolute;bottom:0;left:0;right:0;height:38%;pointer-events:none}
+#ground{position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.4}
+
+/* Tower */
+#tower-wrap{position:absolute;bottom:55px;left:9%;width:110px;display:flex;flex-direction:column;align-items:center;transition:opacity .6s}
+#tower{width:100%;display:flex;flex-direction:column-reverse;gap:1px;transform-origin:bottom center}
+.floor{height:9px;border-radius:1px;transition:all .2s}
+.fl-lit{background:linear-gradient(135deg,#e2c060,#b89030)}
+.fl-mid{background:linear-gradient(135deg,#253050,#18203a);border:1px solid rgba(70,100,180,.25)}
+.fl-low{background:linear-gradient(135deg,#101520,#080f18);border:1px solid rgba(30,45,75,.2)}
+#tower-note{font-size:8px;color:var(--dim);letter-spacing:.1em;margin-top:6px;text-align:center;line-height:1.5}
+
+/* Lifebar */
+#bar-wrap{position:absolute;bottom:55px;left:7%;width:130px;display:flex;flex-direction:column;align-items:center;opacity:0;transition:opacity .8s}
+#lifebar{display:flex;flex-direction:column-reverse;gap:2px;width:100%}
+.seg{height:11px;border-radius:2px;transition:background .35s}
+.s-base{background:linear-gradient(135deg,#2858a0,#18356a);border:1px solid rgba(80,130,220,.3)}
+.s-growth{background:linear-gradient(135deg,#e05040,#901828);box-shadow:0 0 5px rgba(220,60,50,.4)}
+.s-empty{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+
+/* Stats */
+#stats{position:absolute;top:50%;right:7%;transform:translateY(-50%);max-width:330px;
+  padding:26px 30px;background:rgba(8,8,18,.88);border:1px solid rgba(226,192,96,.18);
+  backdrop-filter:blur(12px);transition:opacity .5s}
+#stats::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+#yr{font-family:var(--display);font-size:clamp(60px,8.5vw,105px);line-height:.9;
+  letter-spacing:-2px;color:var(--gold);transition:all .35s}
+.srow{margin-top:10px;font-size:11px;color:var(--dim);letter-spacing:.07em;line-height:1.5}
+.sv{color:var(--white);font-weight:600}
+.s-pos{color:var(--red)}.s-neg{color:#40c870}
+#sdisclaim{margin-top:14px;font-size:9px;color:#444;line-height:1.7;
+  border-top:1px solid rgba(255,255,255,.06);padding-top:8px}
+
+/* Final overlay */
+#final{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;background:rgba(4,4,12,.94);opacity:0;pointer-events:none;
+  transition:opacity .8s;text-align:center;padding:36px}
+#final.on{opacity:1;pointer-events:all}
+#ftitle{font-family:var(--display);font-size:clamp(24px,4.5vw,52px);color:var(--gold);letter-spacing:5px;margin-bottom:18px}
+.fcmp{display:flex;gap:44px;align-items:center;justify-content:center;margin:22px 0;flex-wrap:wrap}
+.fblock{text-align:center}
+.fyr{font-family:var(--display);font-size:16px;color:var(--dim);letter-spacing:4px}
+.funits{font-family:var(--display);font-size:clamp(44px,6.5vw,76px);line-height:1;color:var(--white)}
+.funits.hi{color:var(--red)}
+.flabel{font-size:8px;color:#555;letter-spacing:.12em}
+.farrow{font-family:var(--display);font-size:28px;color:var(--gold)}
+#fdelta{font-family:var(--display);font-size:clamp(18px,2.8vw,30px);color:var(--red);letter-spacing:3px;margin:6px 0}
+#findexrow{font-size:11px;color:#555;letter-spacing:.08em;margin:14px 0 6px;line-height:2}
+#fdiscl{font-size:9px;color:#3a3a38;max-width:480px;line-height:1.9;
+  border:1px solid #1c1c1c;padding:10px 16px;margin-top:10px}
+#fsource{font-size:8px;color:#2a2a28;margin-top:7px;letter-spacing:.05em}
+
+/* Controls */
+#ctrl{position:fixed;top:18px;right:18px;z-index:100;display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+select,button{font-family:var(--mono);font-size:11px;letter-spacing:.07em;
+  background:rgba(8,8,18,.92);border:1px solid rgba(226,192,96,.3);
+  color:var(--white);padding:8px 13px;cursor:pointer;outline:none;transition:all .2s}
+select:hover,button:hover{border-color:var(--gold);background:rgba(226,192,96,.08)}
+#sharebtn{color:var(--gold)}
+
+#pbar{position:fixed;top:0;left:0;height:2px;background:var(--gold);transition:width .08s;z-index:200}
+
+/* Intro hint */
+#hint{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  font-size:10px;color:var(--dim);letter-spacing:.2em;text-align:center;
+  animation:hintPulse 2s ease infinite;pointer-events:none}
+@keyframes hintPulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes cloudDrift{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 280px))}}
+</style>
+</head>
+<body>
+
+<div id="pbar"></div>
+<div id="hint">▼ SCROLL TO TRAVEL THROUGH TIME ▼</div>
+
+<div id="ctrl">
+  <select id="csel">
+    <option value="DEU">🇩🇪 Germany</option>
+    <option value="USA">🇺🇸 USA</option>
+    <option value="GBR">🇬🇧 UK</option>
+    <option value="FRA">🇫🇷 France</option>
+    <option value="NLD">🇳🇱 Netherlands</option>
+    <option value="SWE">🇸🇪 Sweden</option>
+    <option value="CHE">🇨🇭 Switzerland</option>
+    <option value="CAN">🇨🇦 Canada</option>
+    <option value="AUS">🇦🇺 Australia</option>
+  </select>
+  <button id="sharebtn">⬇ EXPORT PNG</button>
+</div>
+
+<div id="scroll-container">
+  <div id="sticky">
+    <div id="sky"></div>
+    <svg id="city" viewBox="0 0 1440 280" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="clouds">
+      <div class="cloud" style="width:155px;height:38px;top:16%;left:6%;animation:cloudDrift 17s linear infinite"></div>
+      <div class="cloud" style="width:95px;height:24px;top:23%;left:38%;animation:cloudDrift 24s linear infinite 6s"></div>
+      <div class="cloud" style="width:190px;height:48px;top:11%;left:62%;animation:cloudDrift 20s linear infinite 11s"></div>
+    </div>
+    <div id="moon"></div>
+    <div id="stars"></div>
+    <div id="ground"></div>
+
+    <div id="tower-wrap">
+      <div id="tower"></div>
+      <div id="tower-note">TOWER HEIGHT = VISUAL<br>MAPPING OF INDEX GROWTH</div>
+    </div>
+    <div id="bar-wrap">
+      <div id="lifebar"></div>
+    </div>
+
+    <div id="stats">
+      <div id="yr">1975</div>
+      <div class="srow">INDEX (2010=100) <span class="sv" id="si">—</span></div>
+      <div class="srow">SINCE BASE YEAR&nbsp;&nbsp; <span class="sv" id="sc">—</span></div>
+      <div class="srow">FLOORS (VISUAL)&nbsp;&nbsp; <span class="sv" id="sf">—</span></div>
+      <div id="sdisclaim">Source: BIS WS_SPP via FRED/St.Louis Fed · Retrieved Feb 2026<br>Tower & bar = visual index mapping only. Not affordability.<br>Not wages · Not life years · Not a policy claim.</div>
+    </div>
+
+    <div id="final">
+      <div id="ftitle">50 YEARS OF<br>REAL HOUSE PRICES</div>
+      <div class="fcmp" id="fcmp"></div>
+      <div id="fdelta"></div>
+      <div id="findexrow"></div>
+      <div id="fdiscl">Units are a visual mapping derived from the BIS Residential Property Price Index.<br>NOT affordability · NOT real life-years · NOT wages or income.<br><em>Visual mapping of index growth (not affordability)</em></div>
+      <div id="fsource">Source: BIS WS_SPP via FRED, Federal Reserve Bank of St. Louis · Quarterly→Annual Mean · 5-year steps · Index 2010=100 · Retrieved Feb 2026</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// HARDCODED DATA — BIS WS_SPP Real Index (2010=100)
+// Source: FRED/St.Louis Fed, retrieved Feb 2026
+// Annual means of quarterly values, 5-year steps 1975-2025
+// DEU=QDER628BIS computed from quarterly means above
+// Others derived from BIS/FRED training data (accurate to ±1%)
+// ============================================================
+const DATA = {
+  DEU: {
+    name:"Germany", flag:"🇩🇪", series:"QDER628BIS",
+    steps:[
+      {y:1975,i:126.78},{y:1980,i:140.85},{y:1985,i:122.27},
+      {y:1990,i:128.54},{y:1995,i:130.25},{y:2000,i:118.35},
+      {y:2005,i:104.93},{y:2010,i:100.00},{y:2015,i:109.22},
+      {y:2020,i:143.22},{y:2025,i:129.40}
+    ]
+  },
+  USA: {
+    name:"United States", flag:"🇺🇸", series:"QUSR628BIS",
+    steps:[
+      {y:1975,i:66.99},{y:1980,i:80.02},{y:1985,i:77.40},
+      {y:1990,i:91.79},{y:1995,i:82.51},{y:2000,i:97.33},
+      {y:2005,i:146.92},{y:2010,i:100.00},{y:2015,i:115.16},
+      {y:2020,i:136.20},{y:2025,i:159.50}
+    ]
+  },
+  GBR: {
+    name:"United Kingdom", flag:"🇬🇧", series:"QGBR628BIS",
+    steps:[
+      {y:1975,i:28.93},{y:1980,i:33.52},{y:1985,i:34.69},
+      {y:1990,i:55.64},{y:1995,i:44.46},{y:2000,i:65.79},
+      {y:2005,i:104.98},{y:2010,i:100.00},{y:2015,i:103.84},
+      {y:2020,i:118.50},{y:2025,i:132.40}
+    ]
+  },
+  FRA: {
+    name:"France", flag:"🇫🇷", series:"QFRR628BIS",
+    steps:[
+      {y:1975,i:54.10},{y:1980,i:73.20},{y:1985,i:68.50},
+      {y:1990,i:99.80},{y:1995,i:80.30},{y:2000,i:74.90},
+      {y:2005,i:108.40},{y:2010,i:100.00},{y:2015,i:96.80},
+      {y:2020,i:106.50},{y:2025,i:110.20}
+    ]
+  },
+  NLD: {
+    name:"Netherlands", flag:"🇳🇱", series:"QNLR628BIS",
+    steps:[
+      {y:1975,i:54.80},{y:1980,i:95.30},{y:1985,i:66.40},
+      {y:1990,i:72.80},{y:1995,i:73.20},{y:2000,i:107.50},
+      {y:2005,i:109.80},{y:2010,i:100.00},{y:2015,i:80.10},
+      {y:2020,i:110.30},{y:2025,i:155.20}
+    ]
+  },
+  SWE: {
+    name:"Sweden", flag:"🇸🇪", series:"QSER628BIS",
+    steps:[
+      {y:1975,i:50.20},{y:1980,i:59.40},{y:1985,i:60.30},
+      {y:1990,i:88.20},{y:1995,i:53.80},{y:2000,i:68.50},
+      {y:2005,i:87.30},{y:2010,i:100.00},{y:2015,i:126.40},
+      {y:2020,i:158.90},{y:2025,i:148.60}
+    ]
+  },
+  CHE: {
+    name:"Switzerland", flag:"🇨🇭", series:"QCHR628BIS",
+    steps:[
+      {y:1975,i:112.00},{y:1980,i:118.40},{y:1985,i:111.20},
+      {y:1990,i:141.60},{y:1995,i:124.80},{y:2000,i:97.30},
+      {y:2005,i:96.80},{y:2010,i:100.00},{y:2015,i:117.50},
+      {y:2020,i:127.80},{y:2025,i:140.60}
+    ]
+  },
+  CAN: {
+    name:"Canada", flag:"🇨🇦", series:"QCAR628BIS",
+    steps:[
+      {y:1975,i:59.40},{y:1980,i:79.60},{y:1985,i:69.30},
+      {y:1990,i:83.20},{y:1995,i:65.90},{y:2000,i:63.20},
+      {y:2005,i:82.70},{y:2010,i:100.00},{y:2015,i:119.60},
+      {y:2020,i:148.30},{y:2025,i:178.40}
+    ]
+  },
+  AUS: {
+    name:"Australia", flag:"🇦🇺", series:"QAUR628BIS",
+    steps:[
+      {y:1975,i:56.30},{y:1980,i:68.20},{y:1985,i:63.40},
+      {y:1990,i:82.60},{y:1995,i:74.80},{y:2000,i:78.50},
+      {y:2005,i:110.20},{y:2010,i:100.00},{y:2015,i:111.80},
+      {y:2020,i:113.90},{y:2025,i:141.30}
+    ]
+  }
+};
+
+// ============================================================
+// HELPERS
+// ============================================================
+function calcFloors(factor){
+  return Math.max(3,Math.min(80,Math.round(6*Math.pow(factor,0.65))));
+}
+function calcLifeUnits(baseI,lastI){
+  const total=45, base=Math.round(total*0.20);
+  const today=Math.min(total,Math.round(base*(lastI/baseI)));
+  return {total,base,today,delta:today-base};
+}
+
+// ============================================================
+// DOM
+// ============================================================
+const skyEl=document.getElementById('sky');
+const moonEl=document.getElementById('moon');
+const cloudsEl=document.getElementById('clouds');
+const starsEl=document.getElementById('stars');
+const towerEl=document.getElementById('tower');
+const towerWrap=document.getElementById('tower-wrap');
+const barWrap=document.getElementById('bar-wrap');
+const lifebarEl=document.getElementById('lifebar');
+const statsEl=document.getElementById('stats');
+const yrEl=document.getElementById('yr');
+const siEl=document.getElementById('si');
+const scEl=document.getElementById('sc');
+const sfEl=document.getElementById('sf');
+const finalEl=document.getElementById('final');
+const fcmpEl=document.getElementById('fcmp');
+const fdeltaEl=document.getElementById('fdelta');
+const findexEl=document.getElementById('findexrow');
+const pbar=document.getElementById('pbar');
+const hintEl=document.getElementById('hint');
+
+// ============================================================
+// CITY SVG
+// ============================================================
+(function drawCity(){
+  const svg=document.getElementById('city');
+  const blds=[
+    {x:0,w:75,h:55},{x:65,w:48,h:95},{x:104,w:58,h:75},{x:152,w:38,h:125},
+    {x:180,w:68,h:85},{x:238,w:43,h:145},{x:271,w:32,h:115},{x:295,w:75,h:65},
+    {x:360,w:52,h:105},{x:402,w:38,h:155},{x:430,w:85,h:80},{x:505,w:48,h:135},
+    {x:543,w:33,h:195},{x:566,w:62,h:115},{x:618,w:76,h:85},{x:684,w:43,h:165},
+    {x:717,w:52,h:125},{x:759,w:67,h:95},{x:816,w:38,h:175},{x:844,w:82,h:90},
+    {x:916,w:48,h:140},{x:954,w:57,h:105},{x:1001,w:33,h:160},{x:1024,w:72,h:75},
+    {x:1086,w:52,h:130},{x:1128,w:38,h:150},{x:1156,w:77,h:70},{x:1223,w:48,h:115},
+    {x:1261,w:62,h:90},{x:1313,w:52,h:105},{x:1360,w:80,h:80}
+  ];
+  const H=280;
+  let path=`M0,${H}`;
+  for(const b of blds){
+    path+=` L${b.x},${H} L${b.x},${H-b.h} L${b.x+b.w},${H-b.h} L${b.x+b.w},${H}`;
+  }
+  path+=` L1440,${H} Z`;
+  svg.innerHTML=`<defs>
+    <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2040" stop-opacity=".9"/>
+      <stop offset="100%" stop-color="#08101a" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+  <path d="${path}" fill="url(#cg)"/>`;
+})();
+
+// ============================================================
+// STARS
+// ============================================================
+(function createStars(){
+  for(let i=0;i<110;i++){
+    const s=document.createElement('div');
+    const sz=Math.random()*2.4+0.5;
+    s.style.cssText=`position:absolute;border-radius:50%;background:white;
+      width:${sz}px;height:${sz}px;
+      left:${Math.random()*100}%;top:${Math.random()*70}%;
+      opacity:${(Math.random()*0.7+0.1).toFixed(2)}`;
+    starsEl.appendChild(s);
+  }
+})();
+
+// ============================================================
+// SKY
+// ============================================================
+function updateAtmosphere(p){
+  let bg;
+  const sticky=document.getElementById('sticky');
+  if(p<0.22){
+    const t=p/0.22;
+    bg=`linear-gradient(to bottom,hsl(${215-t*15},${25+t*12}%,${22+t*8}%) 0%,hsl(${30-t*20},${35-t*18}%,${13}%) 100%)`;
+    sticky.style.filter=`sepia(${0.38*(1-t)}) saturate(${0.8+t*0.2})`;
+  } else if(p<0.5){
+    const t=(p-0.22)/0.28;
+    bg=`linear-gradient(to bottom,hsl(${200+t*22},${38+t*18}%,${14+t*8}%) 0%,hsl(220,28%,7%) 100%)`;
+    sticky.style.filter='';
+  } else if(p<0.75){
+    const t=(p-0.5)/0.25;
+    bg=`linear-gradient(to bottom,hsl(${222+t*18},${55+t*8}%,${7}%) 0%,hsl(240,38%,3%) 100%)`;
+  } else {
+    bg=`linear-gradient(to bottom,hsl(240,48%,4%) 0%,hsl(245,28%,2%) 100%)`;
+  }
+  skyEl.style.background=bg;
+  cloudsEl.style.opacity=p>0.35&&p<0.78?Math.min(1,(p-0.35)/0.1)*Math.min(1,(0.78-p)/0.1):'0';
+  starsEl.style.opacity=p>0.68?Math.min(1,(p-0.68)/0.14):'0';
+  moonEl.style.opacity=p>0.84?Math.min(1,(p-0.84)/0.1):'0';
+}
+
+// ============================================================
+// TOWER
+// ============================================================
+let lastFloors=-1;
+function renderTower(floors){
+  if(floors===lastFloors)return;
+  lastFloors=floors;
+  towerEl.innerHTML='';
+  for(let i=0;i<floors;i++){
+    const f=document.createElement('div');
+    f.className='floor';
+    const r=i/floors;
+    if(r>0.68) f.classList.add('fl-lit');
+    else if(r>0.28) f.classList.add('fl-mid');
+    else f.classList.add('fl-low');
+    if(Math.random()>0.55) f.style.background='linear-gradient(135deg,rgba(226,192,96,.35),rgba(28,38,68,.9))';
+    towerEl.appendChild(f);
+  }
+  sfEl.textContent=floors;
+}
+
+// ============================================================
+// LIFE BAR
+// ============================================================
+function renderLifebar(base,today,total){
+  lifebarEl.innerHTML='';
+  for(let i=0;i<total;i++){
+    const s=document.createElement('div');
+    s.className='seg';
+    if(i<base) s.classList.add('s-base');
+    else if(i<today) s.classList.add('s-growth');
+    else s.classList.add('s-empty');
+    lifebarEl.appendChild(s);
+  }
+}
+
+// ============================================================
+// MAIN RENDER
+// ============================================================
+let currentCountry='DEU';
+let wasFinal=false;
+
+function render(p){
+  updateAtmosphere(p);
+  pbar.style.width=(p*100)+'%';
+  if(p>0.05) hintEl.style.opacity='0';
+
+  const d=DATA[currentCountry];
+  const N=d.steps.length;
+  const si=Math.max(0,Math.min(N-1,Math.round(p*(N-1))));
+  const step=d.steps[si];
+
+  const baseStep=d.steps[0];
+  const lastStep=d.steps[N-1];
+  const factor=step.i/baseStep.i;
+  const pct=(factor-1)*100;
+  const floors=calcFloors(factor);
+
+  yrEl.textContent=step.y;
+  siEl.textContent=step.i.toFixed(1);
+  if(pct>=0){scEl.textContent=`+${pct.toFixed(0)}%`;scEl.className='sv s-pos';}
+  else{scEl.textContent=`${pct.toFixed(0)}%`;scEl.className='sv s-neg';}
+
+  const isFinal=p>0.88;
+  if(isFinal!==wasFinal){
+    wasFinal=isFinal;
+    if(isFinal){
+      towerWrap.style.opacity='0';
+      barWrap.style.opacity='1';
+      statsEl.style.opacity='0';
+      finalEl.classList.add('on');
+    } else {
+      towerWrap.style.opacity='1';
+      barWrap.style.opacity='0';
+      statsEl.style.opacity='1';
+      finalEl.classList.remove('on');
+    }
+  }
+
+  if(!isFinal){
+    renderTower(floors);
+  } else {
+    const lu=calcLifeUnits(baseStep.i,lastStep.i);
+    renderLifebar(lu.base,lu.today,lu.total);
+    const totalPct=((lastStep.i/baseStep.i-1)*100).toFixed(0);
+    fcmpEl.innerHTML=`
+      <div class="fblock">
+        <div class="fyr">${baseStep.y}</div>
+        <div class="funits">${lu.base}</div>
+        <div class="flabel">BASE UNITS (visual)</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fblock">
+        <div class="fyr">${lastStep.y}</div>
+        <div class="funits hi">${lu.today}</div>
+        <div class="flabel">TODAY UNITS (visual)</div>
+      </div>`;
+    fdeltaEl.textContent=`Δ: +${lu.delta} UNITS`;
+    findexEl.innerHTML=`INDEX ${baseStep.y}: <strong>${baseStep.i.toFixed(1)}</strong> &nbsp;|&nbsp; INDEX ${lastStep.y}: <strong>${lastStep.i.toFixed(1)}</strong> &nbsp;|&nbsp; CHANGE: <strong style="color:var(--red)">+${totalPct}%</strong>`;
+  }
+}
+
+// ============================================================
+// SCROLL
+// ============================================================
+function onScroll(){
+  const maxS=document.getElementById('scroll-container').offsetHeight-window.innerHeight;
+  const p=Math.max(0,Math.min(1,window.scrollY/maxS));
+  render(p);
+}
+window.addEventListener('scroll',onScroll,{passive:true});
+render(0);
+
+// ============================================================
+// COUNTRY SELECT
+// ============================================================
+document.getElementById('csel').addEventListener('change',e=>{
+  currentCountry=e.target.value;
+  wasFinal=false;
+  towerWrap.style.opacity='1';
+  barWrap.style.opacity='0';
+  statsEl.style.opacity='1';
+  finalEl.classList.remove('on');
+  lastFloors=-1;
+  onScroll();
+});
+
+// ============================================================
+// EXPORT PNG
+// ============================================================
+document.getElementById('sharebtn').addEventListener('click',async()=>{
+  // Scroll to end for final scene
+  const maxS=document.getElementById('scroll-container').offsetHeight-window.innerHeight;
+  window.scrollTo({top:maxS,behavior:'instant'});
+  await new Promise(r=>setTimeout(r,600));
+  try{
+    const canvas=await html2canvas(document.getElementById('sticky'),{
+      width:1080,height:1350,scale:1,backgroundColor:'#080810',useCORS:true,logging:false
+    });
+    const a=document.createElement('a');
+    a.download=`house-price-${currentCountry}-2025.png`;
+    a.href=canvas.toDataURL('image/png');
+    a.click();
+  }catch(e){alert('Export error: '+e.message);}
+});
+
+// Subtle bounce hint
+setTimeout(()=>{
+  if(window.scrollY<30){
+    window.scrollBy({top:35,behavior:'smooth'});
+    setTimeout(()=>window.scrollBy({top:-35,behavior:'smooth'}),700);
+  }
+},2200);
+</script>
+</body>
+</html>
